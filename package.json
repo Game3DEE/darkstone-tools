@@ -8,6 +8,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "dependencies": {
+    "klaw-sync": "^6.0.0",
+    "mkdirp": "^1.0.4"
+  },
   "keywords": [
     "darkstone",
     "modding",
@@ -15,8 +19,12 @@
   ],
   "author": "Ithamar R. Adema <ithamar@game3dee.com>",
   "license": "MIT",
-  "dependencies": {
-    "klaw-sync": "^6.0.0",
-    "mkdirp": "^1.0.4"
-  }
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Game3DEE/darkstone-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Game3DEE/darkstone-tools/issues"
+  },
+  "homepage": "https://github.com/ashleygwilliams/darkstone-tools"
 }
