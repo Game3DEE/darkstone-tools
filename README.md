@@ -1,6 +1,6 @@
 # Darkstone Tools
 
-This repository contains Darkstone modding tools. You can install them using NodeJS npm by using:
+This repository contains [Darkstone](https://wikipedia.org/wiki/Darkstone) modding tools. You can install them using [NodeJS](https://nodejs.org) npm by using:
 
     npm install -g @game3dee/darkstone-tools
 
