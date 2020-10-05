@@ -1,6 +1,6 @@
 {
   "name": "@game3dee/darkstone-tools",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A set of tools for modding Darkstone",
   "bin": {
     "mtf": "bin/mtf.js"
