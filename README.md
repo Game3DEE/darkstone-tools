@@ -16,6 +16,6 @@ Extraction:
 
 Creation:
 
-    mtf create mynewshiny.mtf /path/from/where/I/pack
+    mtf create mynewshiny.mtf /path/from/where/I/pack/DATA
 
 #### More to come...

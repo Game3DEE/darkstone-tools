@@ -1,7 +1,8 @@
 #! /usr/bin/env node
 const fs = require('fs')
-const path = require('path');
-const mkdirp = require('mkdirp');
+const path = require('path')
+const mkdirp = require('mkdirp')
+const klawSync = require('klaw-sync');
 
 // Simple check to see if we are running on Windows
 // (yes, this actually works on 64-bit windows too)
@@ -19,7 +20,7 @@ if (process.argv.length < 5 ||
 
 const cmd = process.argv[2];
 const archive = process.argv[3];
-const dir = process.argv[4];
+const dir = path.resolve(process.argv[4]);
 
 // Check if input directory exists
 if (cmd == 'create') {
@@ -33,8 +34,7 @@ if (cmd == 'create') {
     process.exit(2);
   }
 
-  // TODO: implement
-  console.log('Sorry, not implemented yet!');
+  create(archive, dir);
 } else if (cmd == 'extract') {
   try {
     if (!fs.statSync(dir).isDirectory()) {
@@ -50,6 +50,90 @@ if (cmd == 'create') {
 
   // arguments are okay, lets go!
   extract(dir, archive);
+}
+
+function create(archive, dir) {
+  let paths
+
+  // Find all files to include in archive
+  try {
+    paths = klawSync(dir, {nodir: true})
+  } catch (e) {
+    console.error(`Error scanning ${dir}: ${e.message}`)
+    process.exit(2)
+  }
+
+  let stripDir = path.dirname(dir);
+
+  // Make sure "dir" ends with a / (or \ on windows)
+  if (!stripDir.endsWith(path.sep)) {
+    stripDir += path.sep;
+  }
+
+  let dataOffset = 0;
+  let dataSize = 0;
+  let headerSize = 4;
+  const entries = paths.map(({path, stats}) => {
+    if (!path.startsWith(stripDir)) {
+      console.error('MAJOR ISSUE: ', path, stripDir);
+      process.exit(3);
+    }
+
+    let relPath = path.slice(stripDir.length);
+    if (!isWindows()) {
+      relPath = relPath.replace(/\//g, '\\');
+    }
+    headerSize += relPath.length + 4; // add room for filename & filename length
+    headerSize += 8; // add room for offset & size
+    let offset = dataOffset;
+    dataOffset += stats.size;
+    dataSize += stats.size;
+    return {
+      path,
+      relPath,
+      offset,
+      size: stats.size,
+    }
+  });
+
+  // Now we know the size of the header, the size of the actual file data,
+  // and the actual files to copy into the archive. Lets go!
+  let buf = new Buffer.alloc(headerSize + dataSize);
+  let dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let offset = 4;
+
+  // Write file count first
+  dv.setUint32(0, entries.length, true)
+
+  // Write index of all files
+  entries.forEach(e => {
+    // Write name to archive index
+    dv.setUint32(offset, e.relPath.length, true)
+    offset += 4
+    for (let i = 0; i < e.relPath.length; i++) {
+      dv.setUint8(offset + i, e.relPath.charCodeAt(i))
+    }
+    offset += e.relPath.length
+
+    // Now write file offset and size
+    dv.setUint32(offset, e.offset + headerSize, true)
+    dv.setUint32(offset + 4, e.size, true)
+    offset += 8
+
+    // Dump filename and size, to match up with extract
+    // for manual verification
+    console.log(e.relPath, e.size);
+  })
+
+  // Now go over all entries again and write the actual file data
+  entries.forEach(e => {
+    const data = fs.readFileSync(e.path)
+    for (let i = 0; i < data.length; i++) {
+      dv.setUint8(offset++, data[i]);
+    }
+  })
+
+  fs.writeFileSync(archive, buf)
 }
 
 function extract(dir, archive) {
