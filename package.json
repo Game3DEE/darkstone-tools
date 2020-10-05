@@ -1,0 +1,22 @@
+{
+  "name": "@game3dee/darkstone-tools",
+  "version": "1.0.0",
+  "description": "A set of tools for modding Darkstone",
+  "bin": {
+    "mtf": "bin/mtf.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "darkstone",
+    "modding",
+    "mtf"
+  ],
+  "author": "Ithamar R. Adema <ithamar@game3dee.com>",
+  "license": "MIT",
+  "dependencies": {
+    "klaw-sync": "^6.0.0",
+    "mkdirp": "^1.0.4"
+  }
+}
