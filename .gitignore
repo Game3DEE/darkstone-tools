@@ -1,4 +1,4 @@
-DATA/
-data/
+/DATA
+/data
 node_modules
 .DS_Store
