@@ -9,18 +9,18 @@ const klawSync = require('klaw-sync');
 const isWindows = () => process.platform === "win32";
 
 // allowed subcommands
-const cmds = ["create", "extract"];
-
-// Check arguments
-if (process.argv.length < 5 ||
-  cmds.indexOf(process.argv[2]) < 0) {
-  console.warn(`Usage: mtf (${cmds.join("|")}) mtf-file path`)
-  process.exit(1)
-}
+const cmds = ["create", "extract", "list"];
 
 const cmd = process.argv[2];
 const archive = process.argv[3];
-const dir = path.resolve(process.argv[4]);
+const dir = process.argv[4] ? path.resolve(process.argv[4]) : "";
+
+// Check arguments
+if (cmds.indexOf(cmd) < 0 ||
+  process.argv.length < (cmd === "list" ? 4 : 5)) {
+  console.warn(`Usage: mtf (${cmds.join("|")}) mtf-file [path]`)
+  process.exit(1)
+}
 
 // Check if input directory exists
 if (cmd == 'create') {
@@ -50,6 +50,8 @@ if (cmd == 'create') {
 
   // arguments are okay, lets go!
   extract(dir, archive);
+} else if (cmd === "list") {
+  extract(dir, archive, true /* display only */);
 }
 
 function create(archive, dir) {
@@ -57,7 +59,7 @@ function create(archive, dir) {
 
   // Find all files to include in archive
   try {
-    paths = klawSync(dir, {nodir: true})
+    paths = klawSync(dir, { nodir: true })
   } catch (e) {
     console.error(`Error scanning ${dir}: ${e.message}`)
     process.exit(2)
@@ -73,7 +75,7 @@ function create(archive, dir) {
   let dataOffset = 0;
   let dataSize = 0;
   let headerSize = 4;
-  const entries = paths.map(({path, stats}) => {
+  const entries = paths.map(({ path, stats }) => {
     if (!path.startsWith(stripDir)) {
       console.error('MAJOR ISSUE: ', path, stripDir);
       process.exit(3);
@@ -136,10 +138,9 @@ function create(archive, dir) {
   fs.writeFileSync(archive, buf)
 }
 
-function extract(dir, archive) {
+function extract(dir, archive, displayOnly = false) {
   // Read whole file in memory and setup for easy decoding
   const buf = fs.readFileSync(archive);
-  console.log(buf);
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
 
   // Get our file index
@@ -170,19 +171,21 @@ function extract(dir, archive) {
       fileName = fileName.replace(/\\/g, '/');
     }
 
-    let fileBuf = null;
-    if (dv.getUint32(fileOffset, true) === 0x0BADBEAF) {
-      // file is compressed, decompress
-      fileBuf = decompress(dv, fileOffset, fileSize);
-    } else {
-      // uncompressed, so copy out of buffer
-      fileBuf = buf.slice(fileOffset, fileOffset + fileSize);
-    }
+    if (!displayOnly) {
+      let fileBuf = null;
+      if (dv.getUint32(fileOffset, true) === 0x0BADBEAF) {
+        // file is compressed, decompress
+        fileBuf = decompress(dv, fileOffset, fileSize);
+      } else {
+        // uncompressed, so copy out of buffer
+        fileBuf = buf.slice(fileOffset, fileOffset + fileSize);
+      }
 
-    // Got the data, now dump it to disk
-    const finalName = path.join(dir, fileName);
-    mkdirp.sync(path.dirname(finalName));
-    fs.writeFileSync(finalName, fileBuf);
+      // Got the data, now dump it to disk
+      const finalName = path.join(dir, fileName);
+      mkdirp.sync(path.dirname(finalName));
+      fs.writeFileSync(finalName, fileBuf);
+    }
 
     // Print out the **original** filename, and the uncompressed size
     // (this is useful for comparing create/extract results)

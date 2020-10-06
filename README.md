@@ -4,11 +4,19 @@ This repository contains [Darkstone](https://wikipedia.org/wiki/Darkstone) moddi
 
     npm install -g @game3dee/darkstone-tools
 
+Rerun the command to update to the latest release. If you're feeling experimental, and want the bleeding edge, you can use:
+
+    npm install -g Game3DEE/darkstone-tools
+
 See below for a list of tools included.
 
 ## MTF
 
-This tool enables you to extract MTF files, and create them. Please note that currently compression is not supported, so if you extract and recreate an MTF file, it'll likely be much bigger.
+This tool enables you to list the content of an MTF file, extract MTF files, and create them. Please note that currently compression is not supported, so if you extract and recreate an MTF file, it'll likely be much bigger.
+
+List:
+
+    mtf list ddata.MTF
 
 Extraction:
 
