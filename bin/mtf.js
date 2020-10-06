@@ -85,7 +85,7 @@ function create(archive, dir) {
     if (!isWindows()) {
       relPath = relPath.replace(/\//g, '\\');
     }
-    headerSize += relPath.length + 4; // add room for filename & filename length
+    headerSize += relPath.length + 1 + 4; // add room for filename, terminating 0 & filename length
     headerSize += 8; // add room for offset & size
     let offset = dataOffset;
     dataOffset += stats.size;
@@ -110,12 +110,13 @@ function create(archive, dir) {
   // Write index of all files
   entries.forEach(e => {
     // Write name to archive index
-    dv.setUint32(offset, e.relPath.length, true)
+    dv.setUint32(offset, e.relPath.length +1, true) // +1 for terminating zero (ASCIIZ, oldschool)
     offset += 4
     for (let i = 0; i < e.relPath.length; i++) {
       dv.setUint8(offset + i, e.relPath.charCodeAt(i))
     }
     offset += e.relPath.length
+    dv.setUint8(offset++, 0) // Add terminating zero to make C happy
 
     // Now write file offset and size
     dv.setUint32(offset, e.offset + headerSize, true)
