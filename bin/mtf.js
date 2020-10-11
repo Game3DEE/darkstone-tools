@@ -18,23 +18,29 @@ const dir = process.argv[4] ? path.resolve(process.argv[4]) : "";
 // Check arguments
 if (cmds.indexOf(cmd) < 0 ||
   process.argv.length < (cmd === "list" ? 4 : 5)) {
-  console.warn(`Usage: mtf (${cmds.join("|")}) mtf-file [path]`)
+  console.warn(`Usage: mtf (${cmds.join("|")}) mtf-file [path...]`)
   process.exit(1)
 }
 
 // Check if input directory exists
 if (cmd == 'create') {
-  try {
-    if (!fs.statSync(dir).isDirectory()) {
-      console.error(`"${dir}" is not a directory!`)
+  // Check all passed paths and resolve them to full paths
+  const dirs = process.argv.slice(4).map(dir => {
+    try {
+      if (!fs.statSync(dir).isDirectory()) {
+        console.error(`"${dir}" is not a directory!`)
+        process.exit(2);
+      }
+    } catch (e) {
+      console.log(`${dir}: ${e.message}`);
       process.exit(2);
     }
-  } catch (e) {
-    console.log(`${dir}: ${e.message}`);
-    process.exit(2);
-  }
 
-  create(archive, dir);
+    return path.resolve(dir);
+  })
+
+  // Pass them to create to combine them into an archive
+  create(archive, dirs);
 } else if (cmd == 'extract') {
   try {
     if (!fs.statSync(dir).isDirectory()) {
@@ -54,49 +60,57 @@ if (cmd == 'create') {
   extract(dir, archive, true /* display only */);
 }
 
-function create(archive, dir) {
+function create(archive, dirs) {
   let paths
 
-  // Find all files to include in archive
-  try {
-    paths = klawSync(dir, { nodir: true })
-  } catch (e) {
-    console.error(`Error scanning ${dir}: ${e.message}`)
-    process.exit(2)
-  }
+  // Create list of info needed to build MTF
+  const dirInfos = dirs.map(dir => {
+    // Find all files to include in archive
+    try {
+      paths = klawSync(dir, { nodir: true })
+    } catch (e) {
+      console.error(`Error scanning ${dir}: ${e.message}`)
+      process.exit(2)
+    }
 
-  let stripDir = path.dirname(dir);
+    let stripDir = path.dirname(dir);
 
-  // Make sure "dir" ends with a / (or \ on windows)
-  if (!stripDir.endsWith(path.sep)) {
-    stripDir += path.sep;
-  }
+    // Make sure "dir" ends with a / (or \ on windows)
+    if (!stripDir.endsWith(path.sep)) {
+      stripDir += path.sep;
+    }
+
+    return { dir, stripDir, paths };
+  })
 
   let dataOffset = 0;
   let dataSize = 0;
   let headerSize = 4;
-  const entries = paths.map(({ path, stats }) => {
-    if (!path.startsWith(stripDir)) {
-      console.error('MAJOR ISSUE: ', path, stripDir);
-      process.exit(3);
-    }
+  const entries = [];
+  dirInfos.forEach(({ stripDir, paths }) => {
+    entries.push.apply(entries, paths.map(({ path, stats }) => {
+      if (!path.startsWith(stripDir)) {
+        console.error('MAJOR ISSUE: ', path, stripDir);
+        process.exit(3);
+      }
 
-    let relPath = path.slice(stripDir.length);
-    if (!isWindows()) {
-      relPath = relPath.replace(/\//g, '\\');
-    }
-    headerSize += relPath.length + 1 + 4; // add room for filename, terminating 0 & filename length
-    headerSize += 8; // add room for offset & size
-    let offset = dataOffset;
-    dataOffset += stats.size;
-    dataSize += stats.size;
-    return {
-      path,
-      relPath,
-      offset,
-      size: stats.size,
-    }
-  });
+      let relPath = path.slice(stripDir.length);
+      if (!isWindows()) {
+        relPath = relPath.replace(/\//g, '\\');
+      }
+      headerSize += relPath.length + 1 + 4; // add room for filename, terminating 0 & filename length
+      headerSize += 8; // add room for offset & size
+      let offset = dataOffset;
+      dataOffset += stats.size;
+      dataSize += stats.size;
+      return {
+        path,
+        relPath,
+        offset,
+        size: stats.size,
+      }
+    }))
+  })
 
   // Now we know the size of the header, the size of the actual file data,
   // and the actual files to copy into the archive. Lets go!
