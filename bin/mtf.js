@@ -210,14 +210,14 @@ function extract(dir, archive, displayOnly = false) {
 
 function decompress(dv, off, size) {
   //let compressedSig = dv.getUint32(off + 0, true);
-  //let compressedSize = dv.getUint32(off + 4, true);
-  //let decompressedSize = dv.getUint32(off + 8, true);
+  let compressedSize = dv.getUint32(off + 4, true);
+  let decompressedSize = dv.getUint32(off + 8, true);
   off += 12;
 
   let out = new Buffer.alloc(size);
   let outIdx = 0;
 
-  let bytesLeft = size;
+  let bytesLeft = decompressedSize;
   while (bytesLeft > 0) {
     let chunkBits = dv.getUint8(off++);
     for (let b = 0; b < 8; b++) {
@@ -245,7 +245,7 @@ function decompress(dv, off, size) {
         }
 
         if (bytesLeft < 0) {
-          console.error("Compressed/decompressed size mismatch!");
+          console.error("Compressed/decompressed size mismatch!", compressedSize, size, decompressedSize);
           return null;
         }
       }
