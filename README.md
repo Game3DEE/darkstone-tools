@@ -1,5 +1,7 @@
 # Darkstone Tools
 
+[![npm version](https://badge.fury.io/js/%40game3dee%2Fdarkstone-tools.svg)](https://badge.fury.io/js/%40game3dee%2Fdarkstone-tools)
+
 This repository contains [Darkstone](https://wikipedia.org/wiki/Darkstone) modding tools. You can install them using [NodeJS](https://nodejs.org) npm by using:
 
     npm install -g @game3dee/darkstone-tools
