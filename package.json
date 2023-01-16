@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "klaw-sync": "^6.0.0",
-    "mkdirp": "^1.0.4"
+    "mkdirp": "^2.0.0"
   },
   "keywords": [
     "darkstone",
