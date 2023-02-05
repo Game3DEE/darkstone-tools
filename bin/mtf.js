@@ -188,7 +188,8 @@ function extract(dir, archive, displayOnly = false) {
 
     if (!displayOnly) {
       let fileBuf = null;
-      if (dv.getUint32(fileOffset, true) === 0x0BADBEAF) {
+      const magic = dv.getUint32(fileOffset, true)
+      if (magic === 0x0BADBEAF || magic === 0x0BADBEAE) {
         // file is compressed, decompress
         fileBuf = decompress(dv, fileOffset, fileSize);
       } else {
