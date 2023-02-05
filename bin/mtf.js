@@ -188,13 +188,13 @@ function extract(dir, archive, displayOnly = false) {
 
     if (!displayOnly) {
       let fileBuf = null;
-      const magic = dv.getUint32(fileOffset, true)
-      if (magic === 0x0BADBEAF || magic === 0x0BADBEAE) {
+      const magic = dv.getUint16(fileOffset, true);
+      if (magic === 0xBEAF || magic === 0x0BEAE) {
         // file is compressed, decompress
         fileBuf = decompress(dv, fileOffset, fileSize);
       } else {
         // uncompressed, so copy out of buffer
-        fileBuf = buf.slice(fileOffset, fileOffset + fileSize);
+        fileBuf = buf.subarray(fileOffset, fileOffset + fileSize);
       }
 
       // Got the data, now dump it to disk
